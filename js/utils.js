@@ -18,7 +18,7 @@ function calculateAverage(array) {
 function prepareComboChartData(title, summary_col, totals) {
   const headers = [summary_col];
   const result = [];
-  Object.keys(totals).map((item) => result.push([item])).filter((item) => item != 'empty');
+  Object.keys(totals).map((item) => result.push([item]));
 
   Object.values(totals)[0].map((item, index) => {
     headers.push(Object.keys(item)[0]);
@@ -32,11 +32,11 @@ function prepareComboChartData(title, summary_col, totals) {
 // Draw a Pie chart
 function drawPieChart(title, summary_col, totals) {
   const data = prepareChartData(title, summary_col, totals);
-  var options = { 
-  title: title,
-  width: 1000,
-  height: 'fit-content',
-  legend: { position: 'top' , maxLines : 100},
+  var options = {
+    title: title,
+    width: 1000,
+    height: 'fit-content',
+    legend: { position: 'top', maxLines: 100 },
   };
   var chart = new google.visualization.PieChart(chart_container);
   chart.draw(data, options);

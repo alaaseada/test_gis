@@ -1,17 +1,24 @@
 // Grab the elements that contain data
-var summarizing_option_form ; var result_table; var report_window;
+var summarizing_option_form;
+var result_table;
+var report_window;
 
-function instForm(tableName,formName) {
-	summarizing_option_form = document.getElementById(formName);
-	result_table = document.getElementById(tableName);
-	var selected_filters = [].filter
-	.call(
-	summarizing_option_form.querySelectorAll('input[type=checkbox]'),(elem) => elem.checked)
-	.map((elem) => elem.value);
-	if (selected_filters.length > 2) {alert('Sorry! You can combine only 2 filters for now.'); return;}
-	if (report_window) report_window.close();
-	report_window = window.open('', '_blank');
-	summarize_Table(tableName, selected_filters);
+function instForm(tableName, formName) {
+  summarizing_option_form = document.getElementById(formName);
+  result_table = document.getElementById(tableName);
+  var selected_filters = [].filter
+    .call(
+      summarizing_option_form.querySelectorAll('input[type=checkbox]'),
+      (elem) => elem.checked
+    )
+    .map((elem) => elem.value.trim());
+  if (selected_filters.length > 2) {
+    alert('Sorry! You can combine only 2 filters for now.');
+    return;
+  }
+  if (report_window) report_window.close();
+  report_window = window.open('', '_blank');
+  summarize_Table(tableName, selected_filters);
 }
 
 // Summarizing the table -> calculate totals
@@ -19,31 +26,40 @@ function summarize_Table(tableId, selected_filters) {
   // Get table Headers
   var tableHeaders = Array.prototype.map.call(
     document.querySelectorAll(`#${tableId} thead tr th.header-name`),
-    (th) => th.innerHTML
+    (th) => th.innerHTML.trim()
   );
 
   // Calculate Summaries
   var tableInfo = Array.prototype.map.call(
-    document.querySelectorAll(`#${tableId} tbody tr`),
+    document.querySelectorAll(
+      `#${tableId} tbody tr[style="visibility: visible"]`
+    ),
     (tr) => {
-      return Array.prototype.map.call(tr.querySelectorAll('td:not(.HiddenCol)'), (td) => {
-        return td.innerHTML;
-      });
+      return Array.prototype.map.call(
+        tr.querySelectorAll('td:not(.HiddenCol)'),
+        (td) => {
+          return td.innerHTML.trim();
+        }
+      );
     }
   );
   // Get the targeted column
   const summary_cols = tableInfo.map((row) => {
     if (selected_filters.length > 1) {
-      const columns = selected_filters.map(
-        (criteria) => {
-          let index_of_criteria = tableId === 'DataSrchDataDiv'? tableHeaders.indexOf(criteria) + 1 : tableHeaders.indexOf(criteria);
-          return row[index_of_criteria]
-        }
-      );
+      const columns = selected_filters.map((criteria) => {
+        let index_of_criteria =
+          tableId === 'DataSrchDataDiv'
+            ? tableHeaders.indexOf(criteria) + 1
+            : tableHeaders.indexOf(criteria);
+        return row[index_of_criteria];
+      });
       return columns;
     } else {
-      let index_of_filter = tableId === 'DataSrchDataDiv'? tableHeaders.indexOf(selected_filters[0]) + 1 : tableHeaders.indexOf(selected_filters[0]);
-	  return row[index_of_filter];
+      let index_of_filter =
+        tableId === 'DataSrchDataDiv'
+          ? tableHeaders.indexOf(selected_filters[0]) + 1
+          : tableHeaders.indexOf(selected_filters[0]);
+      return row[index_of_filter];
     }
   });
 
@@ -52,28 +68,15 @@ function summarize_Table(tableId, selected_filters) {
   // Aggregate 2 filters
   if (selected_filters.length === 2) {
     const root_distinct_values = Array.from(
-      new Set(summary_cols.map((item) => item[0]))
-    ).filter((elem) => elem);
-    console.log(root_distinct_values)
+      new Set(summary_cols.map((item) => item[0].trim()))
+    ).filter((elem) => elem !== '');
     const child_distinct_values = Array.from(
-      new Set(summary_cols.map((item) => item[1]))
-    ).filter((elem) => elem);
-      console.log(child_distinct_values)
+      new Set(summary_cols.map((item) => item[1].trim()))
+    ).filter((elem) => elem !== '');
     root_distinct_values.forEach((root_item) => {
-      const value_to_compare = root_item;
-      if (root_item.trim() === '') 
-      {
-        root_item = 'empty';
-      }
       totals[root_item] = child_distinct_values.map((child_item) => {
-        if (child_item.trim() === '') {
-          child_item = 'empty';
-        }
         const total = summary_cols.reduce((total, current_item) => {
-          if (
-            current_item[0] === value_to_compare &&
-            current_item[1] === child_item
-          ) {
+          if (current_item[0] === root_item && current_item[1] === child_item) {
             total += 1;
           }
           return total;
@@ -81,28 +84,21 @@ function summarize_Table(tableId, selected_filters) {
         return { [child_item]: total };
       });
     });
-    delete totals['empty'];
-    console.log(totals)
+    console.log(totals);
     // Calculate totals for 1 filter
   } else if (selected_filters.length === 1) {
     const distinct_values = Array.from(
       new Set(summary_cols.map((item) => item))
-    ).filter((elem) => elem);
+    ).filter((elem) => elem !== '');
     distinct_values.forEach((value) => {
-      const value_to_compare = value;
-      if (value.trim() === ''){
-        value = 'empty';
-        return
-      }
       totals[value] = summary_cols.reduce((total, currentValue) => {
-        if (currentValue === value_to_compare) {
+        if (currentValue === value) {
           total += 1;
         }
         return total;
       }, 0);
     });
   }
-  console.log(totals)
   // ================Display=============
   report_window.document.write(`
     <html>
